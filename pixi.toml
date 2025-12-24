@@ -1,0 +1,19 @@
+[workspace]
+authors = ["Th3W33kndXO <th3w33kndxo@gmail.com>"]
+channels = ["conda-forge"]
+name = "GTA VC Server"
+platforms = ["win-64"]
+version = "0.1.0"
+
+[tasks]
+local = "python server.py --custom_saves"
+start = "python server.py --vcsky_local --custom_saves"
+cheat = "python server.py --vcsky_local --custom_saves --cheats --open"
+
+[dependencies]
+python = "3.12.*"
+fastapi = ">=0.127.0,<0.128"
+uvicorn = ">=0.40.0,<0.41"
+httpx = ">=0.28.1,<0.29"
+brotli = ">=1.2.0,<2"
+python-multipart = ">=0.0.21,<0.0.22"

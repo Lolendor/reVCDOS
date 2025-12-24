@@ -1,22 +1,28 @@
 import os
 import argparse
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import StreamingResponse, FileResponse, Response
-from fastapi.staticfiles import StaticFiles
-from starlette.background import BackgroundTask
 import httpx
-import additions.saves as saves
+import shutil
+from fastapi import FastAPI, Response
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from additions.auth import BasicAuthMiddleware
+import additions.saves as saves
+
+# --- CONFIGURATION ---
+CDN_VCSKY = "https://cdn.dos.zone/vcsky/"
+DIR_VCBR = "vcbr"
+DIR_VCSKY = "vcsky"
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--port", type=int, default=8000)
 parser.add_argument("--custom_saves", action="store_true")
 parser.add_argument("--login", type=str)
 parser.add_argument("--password", type=str)
-parser.add_argument("--vcsky_local", action="store_true", help="Serve vcsky from local directory instead of proxy")
-parser.add_argument("--vcbr_local", action="store_true", help="Serve vcbr from local directory instead of proxy")
-parser.add_argument("--vcsky_url", type=str, default="https://cdn.dos.zone/vcsky/", help="Custom vcsky proxy URL")
-parser.add_argument("--vcbr_url", type=str, default="https://br.cdn.dos.zone/vcsky/", help="Custom vcbr proxy URL")
+# Defaulting to True to prioritize local files
+parser.add_argument("--vcsky_local", action="store_true", default=True)
+parser.add_argument("--vcbr_local", action="store_true", default=True)
+parser.add_argument("--cheats", action="store_true", help="Enable cheats in URL")
+parser.add_argument("--open", action="store_true", help="Open browser on start")
 args = parser.parse_args()
 
 app = FastAPI()
@@ -27,86 +33,94 @@ if args.login and args.password:
 if args.custom_saves:
     app.include_router(saves.router)
 
-VCSKY_BASE_URL = args.vcsky_url
-VCBR_BASE_URL = args.vcbr_url
+# Ensure directories
+os.makedirs(DIR_VCBR, exist_ok=True)
+os.makedirs(DIR_VCSKY, exist_ok=True)
 
-def request_to_url(request: Request, path: str, base_url: str):
-    query_string = str(request.url.query) if request.url.query else ""
-    url = f"{base_url}{path}"
-    if query_string:
-        url = f"{url}?{query_string}"
-    return url
+def serve_file(path):
+    """Helper to serve files with correct headers"""
+    media_type = "application/octet-stream"
+    if path.endswith(".wasm"): media_type = "application/wasm"
+    elif path.endswith(".html"): media_type = "text/html"
+    elif path.endswith(".js"): media_type = "application/javascript"
+    elif path.endswith(".css"): media_type = "text/css"
+    elif path.endswith(".mp3"): media_type = "audio/mpeg"
 
-async def _proxy_request(request: Request, url: str):
-    client = httpx.AsyncClient(timeout=None)
-    headers = {k: v for k, v in request.headers.items() if k.lower() not in ["host", "content-length"]}
-    
-    req = client.build_request(request.method, url, headers=headers)
-    r = await client.send(req, stream=True)
-    
-    excluded_headers = {"content-length", "transfer-encoding", "connection", "keep-alive", "upgrade", "content-encoding", "x-content-encoding"}
-    response_headers = {k: v for k, v in r.headers.items() if k.lower() not in excluded_headers}
-    
-    response_headers["Cross-Origin-Opener-Policy"] = "same-origin"
-    response_headers["Cross-Origin-Embedder-Policy"] = "require-corp"
+    headers = {
+        "Cross-Origin-Opener-Policy": "same-origin",
+        "Cross-Origin-Embedder-Policy": "require-corp",
+        "Cache-Control": "no-cache" # Force browser to check server so we can fill cache
+    }
+    if path.endswith(".br"): headers["Content-Encoding"] = "br"
 
-    return StreamingResponse(
-        r.aiter_bytes(),
-        status_code=r.status_code,
-        headers=response_headers,
-        background=BackgroundTask(client.aclose)
-    )
+    return FileResponse(path, media_type=media_type, headers=headers)
 
-# vcsky routes - either local or proxy
-if args.vcsky_local:
-    app.mount("/vcsky", StaticFiles(directory="vcsky"), name="vcsky")
-else:
-    @app.api_route("/vcsky/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"])
-    async def vc_sky_proxy(request: Request, path: str):
-        return await _proxy_request(request, request_to_url(request, path, VCSKY_BASE_URL))
+async def fetch_and_cache(rel_path, local_root, remote_base):
+    # Sanitize path
+    clean_path = rel_path.lstrip("/")
+    local_path = os.path.join(local_root, clean_path)
 
-# vcbr routes - either local or proxy
-if args.vcbr_local:
-    @app.get("/vcbr/{file_path:path}")
-    async def serve_vcbr_local(file_path: str):
-        file_location = os.path.join("vcbr", file_path)
-        if not os.path.isfile(file_location):
-            raise HTTPException(status_code=404, detail="File not found")
-        
-        headers = {
-            "Cross-Origin-Opener-Policy": "same-origin",
-            "Cross-Origin-Embedder-Policy": "require-corp"
-        }
-        
-        media_type = "application/octet-stream"
-        if file_path.endswith(".wasm.br"):
-            media_type = "application/wasm"
-            headers["Content-Encoding"] = "br"
-        elif file_path.endswith(".data.br"):
-            media_type = "application/octet-stream"
-            headers["Content-Encoding"] = "br"
-        elif file_path.endswith(".wasm"):
-            media_type = "application/wasm"
-        
-        return FileResponse(file_location, media_type=media_type, headers=headers)
-else:
-    @app.api_route("/vcbr/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"])
-    async def vc_br_proxy(request: Request, path: str):
-        return await _proxy_request(request, request_to_url(request, path, VCBR_BASE_URL))
+    # 1. SERVE LOCAL IF EXISTS
+    if os.path.exists(local_path):
+        # Don't log every tiny hit to keep console clean
+        if not clean_path.endswith(".dff") and not clean_path.endswith(".txd"):
+             print(f"[{local_root.upper()}] HIT: {clean_path}")
+        return serve_file(local_path)
+
+    # 2. DOWNLOAD IF MISSING
+    print(f"[{local_root.upper()}] MISS: {clean_path} -> Downloading...")
+
+    remote_url = f"{remote_base}{clean_path}"
+    temp_path = local_path + ".tmp"
+
+    try:
+        os.makedirs(os.path.dirname(local_path), exist_ok=True)
+
+        async with httpx.AsyncClient() as client:
+            async with client.stream("GET", remote_url) as r:
+                if r.status_code == 200:
+                    with open(temp_path, "wb") as f:
+                        async for chunk in r.aiter_bytes():
+                            f.write(chunk)
+
+                    # Atomic move: Only rename if download finished successfully
+                    shutil.move(temp_path, local_path)
+                    print(f"[{local_root.upper()}] SAVED: {clean_path}")
+                    return serve_file(local_path)
+                else:
+                    print(f"[{local_root.upper()}] 404 Remote: {remote_url}")
+                    return Response(content="Not Found", status_code=404)
+    except Exception as e:
+        # Cleanup temp file if error
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        print(f"Error fetching {clean_path}: {e}")
+        return Response(content="Server Error", status_code=500)
+
+@app.get("/vcbr/{path:path}")
+async def route_vcbr(path: str):
+    # VCBR is strictly local now as you have the files
+    local_path = os.path.join(DIR_VCBR, path)
+    if os.path.exists(local_path):
+        return serve_file(local_path)
+    return Response(status_code=404)
+
+@app.get("/vcsky/{path:path}")
+async def route_vcsky(path: str):
+    if path == "sha256sums.txt":
+        return serve_file(os.path.join(DIR_VCSKY, path))
+    return await fetch_and_cache(path, os.path.join(DIR_VCSKY, "fetched"), CDN_VCSKY)
 
 @app.get("/")
 async def read_index():
     if os.path.exists("dist/index.html"):
         with open("dist/index.html", "r", encoding="utf-8") as f:
             content = f.read()
-        
-        # Inject custom_saves status
         custom_saves_val = "1" if args.custom_saves else "0"
         content = content.replace(
             'new URLSearchParams(window.location.search).get("custom_saves") === "1"',
             f'"{custom_saves_val}" === "1"'
         )
-        
         return Response(content, media_type="text/html", headers={
             "Cross-Origin-Opener-Policy": "same-origin",
             "Cross-Origin-Embedder-Policy": "require-corp"
@@ -117,7 +131,18 @@ app.mount("/", StaticFiles(directory="dist"), name="root")
 
 if __name__ == "__main__":
     import uvicorn
-    print(f"Starting server on http://localhost:{args.port}")
-    print(f"vcsky: {'local' if args.vcsky_local else 'proxy'} ({VCSKY_BASE_URL if not args.vcsky_local else 'vcsky/'})")
-    print(f"vcbr: {'local' if args.vcbr_local else 'proxy'} ({VCBR_BASE_URL if not args.vcbr_local else 'vcbr/'})")
-    uvicorn.run(app, host="0.0.0.0", port=args.port)
+    import webbrowser
+    import threading
+
+    url = f"http://localhost:{args.port}"
+    if args.cheats:
+        url += "/?cheats=1"
+
+    print(f"GTA VC Caching Server Running at {url}")
+
+    if args.open:
+        def open_browser():
+            webbrowser.open(url)
+        threading.Timer(1.5, open_browser).start()
+
+    uvicorn.run(app, host="localhost", port=args.port)
