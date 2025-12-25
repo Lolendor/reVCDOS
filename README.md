@@ -72,7 +72,7 @@ This project is a community effort to preserve the incredible HTML5 port of GTA:
         curl -fsSL https://pixi.sh/install.sh | bash
         ```
 
-3.  **Start the game**:
+4.  **Start the game**:
     *   **Standard Mode**:
         ```bash
         pixi run start
@@ -82,11 +82,11 @@ This project is a community effort to preserve the incredible HTML5 port of GTA:
         pixi run cheat
         ```
 
-4.  **Play**: Open the link shown in the terminal (usually `http://localhost:8000`). If you used `pixi run cheat`, the browser should open automatically.
+5.  **Play**: Open the link shown in the terminal (usually `http://localhost:8000`). If you used `pixi run cheat`, the browser should open automatically.
 
 ## Requirements
 
-- Python 3.8+
+- Docker or Python 3.8+ or PHP 8.0+
 - Dependencies from `requirements.txt`
 - **Pixi** (Recommended for package management)
 
@@ -107,7 +107,7 @@ This project uses [Pixi](https://pixi.sh/) for dependency management and task ru
 The easiest way to get started is using Docker Compose:
 
 ```bash
-docker compose up -d --build
+VCSKY_CACHE=1 VCBR_CACHE=1 docker compose up -d --build
 ```
 
 To configure server options via environment variables:
@@ -125,6 +125,12 @@ IN_PORT=3000 AUTH_LOGIN=admin AUTH_PASSWORD=secret CUSTOM_SAVES=1 docker compose
 | `AUTH_LOGIN` | HTTP Basic Auth username |
 | `AUTH_PASSWORD` | HTTP Basic Auth password |
 | `CUSTOM_SAVES` | Enable local saves (set to `1`) |
+| `VCSKY_LOCAL` | Serve vcsky from local directory (set to `1`) |
+| `VCBR_LOCAL` | Serve vcbr from local directory (set to `1`) |
+| `VCSKY_URL` | Custom vcsky proxy URL |
+| `VCBR_URL` | Custom vcbr proxy URL |
+| `VCSKY_CACHE` | Cache vcsky files locally while proxying (set to `1`) |
+| `VCBR_CACHE` | Cache vcbr files locally while proxying (set to `1`) |
 
 ### Option 3: Local Installation (Manual)
 
@@ -135,25 +141,15 @@ pip install -r requirements.txt
 
 2. Start the server:
 ```bash
-python server.py --custom_saves
+python server.py --vcsky_local --vcbr_local --custom_saves
 ```
 
 Server starts at `http://localhost:8000`
 
-## Server Behavior & Caching
+### Option 4: Shared Hosting on PHP (No installation)
 
-The server (`server.py`) has been updated with a smart caching strategy to optimize performance and bandwidth.
-
-*   **`vcbr` Resources (Core Game Data)**:
-    *   These files **MUST** be present locally in the `vcbr/` directory.
-    *   The server will *only* look for them locally. It does not download them from a CDN.
-    *   Ensure you have the correct `.data` and `.wasm` files in `vcbr/`.
-
-*   **`vcsky` Resources (Additional Assets)**:
-    *   The server uses a **Cache-First** strategy.
-    *   **Check Local**: It first checks if the requested file exists in the local `vcsky/` directory.
-    *   **Download & Cache**: If the file is missing locally, it automatically downloads it from the CDN (`https://cdn.dos.zone/vcsky/`), saves it to the local `vcsky/` directory, and then serves it.
-    *   **Serve**: Subsequent requests for the same file are served directly from the local disk.
+If you want to run the game from a hosted environment with `PHP 8.0` or above, just copy the contents of this repo to your desired hosting.
+By default the `index.php` and `.htaccess` will get the job done.
 
 ## Server Options
 
@@ -163,8 +159,14 @@ The server (`server.py`) has been updated with a smart caching strategy to optim
 | `--custom_saves` | flag | disabled | Enable local save files (saves router) |
 | `--login` | string | none | HTTP Basic Auth username |
 | `--password` | string | none | HTTP Basic Auth password |
-| `--vcsky_local` | flag | enabled | (Legacy) Prioritize local `vcsky` files (now default behavior) |
-| `--vcbr_local` | flag | enabled | (Legacy) Prioritize local `vcbr` files (now default behavior) |
+| `--vcsky_local` | flag | enabled | Serve vcsky from local `vcsky/` directory |
+| `--vcbr_local` | flag | enabled | Serve vcbr from local `vcbr/` directory |
+| `--vcsky_url` | string | `https://cdn.dos.zone/vcsky/` | Custom vcsky proxy URL |
+| `--vcbr_url` | string | `https://br.cdn.dos.zone/vcsky/` | Custom vcbr proxy URL |
+| `--vcsky_cache` | flag | disabled | Cache vcsky files locally while proxying |
+| `--vcbr_cache` | flag | disabled | Cache vcbr files locally while proxying |
+| `--cheats` | flag | disabled | Enable cheats in URL |
+| `--open` | flag | disabled | Open browser on start |
 
 **Examples:**
 ```bash
@@ -176,6 +178,12 @@ python server.py --custom_saves
 
 # Enable HTTP Basic Authentication
 python server.py --login admin --password secret123
+
+# Use local vcsky and vcbr files (fully offline mode)
+python server.py --vcsky_local --vcbr_local
+
+# Cache files locally while proxying (hybrid mode)
+python server.py --vcsky_cache --vcbr_cache
 ```
 
 ## URL Parameters
@@ -192,11 +200,12 @@ python server.py --login admin --password secret123
 ## Project Structure
 
 ```
-├── server.py           # FastAPI caching server
+├── server.py           # FastAPI proxy/caching server
 ├── pixi.toml           # Pixi project configuration
 ├── requirements.txt    # Python dependencies
 ├── additions/          # Server extensions
 │   ├── auth.py         # HTTP Basic Auth middleware
+│   ├── cache.py        # Proxy caching and brotli decompression
 │   └── saves.py        # Local saves router
 ├── dist/               # Game client files
 │   ├── index.html      # Main page

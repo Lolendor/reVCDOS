@@ -19,7 +19,9 @@ services:
       - VCBR_LOCAL=${VCBR_LOCAL:-}
       - VCSKY_URL=${VCSKY_URL:-}
       - VCBR_URL=${VCBR_URL:-}
-    command: >
+      - VCSKY_CACHE=${VCSKY_CACHE:-}
+      - VCBR_CACHE=${VCBR_CACHE:-}
+    command: > 
       sh -c "python server.py
       --port $${IN_PORT:-8000}
       $$([ -n \"$$AUTH_LOGIN\" ] && [ -n \"$$AUTH_PASSWORD\" ] && echo \"--login $$AUTH_LOGIN --password $$AUTH_PASSWORD\" || echo '')
@@ -27,5 +29,7 @@ services:
       $$([ \"$$VCSKY_LOCAL\" = '1' ] && echo '--vcsky_local' || echo '')
       $$([ \"$$VCBR_LOCAL\" = '1' ] && echo '--vcbr_local' || echo '')
       $$([ -n \"$$VCSKY_URL\" ] && echo \"--vcsky_url $$VCSKY_URL\" || echo '')
-      $$([ -n \"$$VCBR_URL\" ] && echo \"--vcbr_url $$VCBR_URL\" || echo '')"
+      $$([ -n \"$$VCBR_URL\" ] && echo \"--vcbr_url $$VCBR_URL\" || echo '')
+      $$([ \"$$VCSKY_CACHE\" = '1' ] && echo '--vcsky_cache' || echo '')
+      $$([ \"$$VCBR_CACHE\" = '1' ] && echo '--vcbr_cache' || echo '')"
     restart: unless-stopped

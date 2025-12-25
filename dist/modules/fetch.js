@@ -37,7 +37,7 @@ function fetchXHR(fetch, onsuccess, onerror, onprogress, onreadystatechange) {
         onerror(fetch, "no url specified!");
         return
     }
-    var url_ = UTF8ToString(url).replace(replaceFetch.from, replaceFetch.to);
+    var url_ = replaceFetch(UTF8ToString(url));
     var fetch_attr = fetch + 108;
     var requestMethod = UTF8ToString(fetch_attr + 0);
     requestMethod ||= "GET";

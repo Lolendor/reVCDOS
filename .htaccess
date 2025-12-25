@@ -1,0 +1,47 @@
+# JS files
+AddType application/javascript .js
+
+# WebAssembly files
+AddType application/wasm .wasm
+
+# CSS files
+AddType text/css .css
+
+# Brotli-compressed files
+AddEncoding br .br
+
+
+
+# Enable rewrite engine
+RewriteEngine On
+
+# Set base path if PHP file is not in root
+RewriteBase /
+
+# If the request is for an existing file or directory, serve it directly
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Otherwise, route everything to index.php
+RewriteRule ^.*$ index.php [L,QSA]
+
+
+# Correct MIME types
+AddType application/javascript .js
+AddType application/wasm .wasm
+AddType text/css .css
+
+# Brotli compressed files
+AddEncoding br .br
+
+# Optional: force correct MIME for .js.br or .wasm.br
+<FilesMatch "\.js\.br$">
+    ForceType application/javascript
+    AddEncoding br
+</FilesMatch>
+
+<FilesMatch "\.wasm\.br$">
+    ForceType application/wasm
+    AddEncoding br
+</FilesMatch>

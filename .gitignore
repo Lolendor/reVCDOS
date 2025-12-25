@@ -1,6 +1,15 @@
 # pixi environments
 .pixi/*
 !.pixi/config.toml
-vcsky/fetched
+
+# Python
+*.pyc
+__pycache__/
+*.$py.class
+
+# System
+.DS_Store
+
+# Game Assets
 vcbr/
-__pycache__
+vcsky/fetched

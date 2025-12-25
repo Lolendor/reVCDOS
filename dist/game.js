@@ -8,7 +8,7 @@ var wasm_content;
 const params = new URLSearchParams(window.location.search);
 
 // Base URLs
-const replaceFetch = { from: "https://cdn.dos.zone/vcsky/", to: "/vcsky/" }
+const replaceFetch = (str) => str.replace("https://cdn.dos.zone/vcsky/", "/vcsky/")
 const replaceBR = "/vcbr/"
 
 const autoFullScreen = true;
@@ -567,7 +567,7 @@ disclaimerCheckbox.addEventListener('change', async (inputEvent) => {
                 try {
                     const file = e.target.files[0];
                     if (file) {
-                        const sha256sums = (await (await fetch(`${replaceFetch.to}sha256sums.txt`)).text()).toLowerCase();
+                        const sha256sums = (await (await fetch(replaceFetch("https://cdn.dos.zone/vcsky/sha256sums.txt"))).text()).toLowerCase();
                         const arrayBuffer = await file.arrayBuffer();
                         if (window.crypto && window.crypto.subtle) {
                             const hashBuffer = await window.crypto.subtle.digest('SHA-256', arrayBuffer);
