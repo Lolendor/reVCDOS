@@ -295,6 +295,34 @@ Enable with `?cheats=1`, press **F3** to open menu:
 - All classic GTA VC cheats
 - AirBreak (noclip mode)
 
+## Remote Access (Tailscale / LAN)
+
+The server is configured to listen on `0.0.0.0`, meaning it accepts connections from other devices on your network (LAN or VPN like Tailscale).
+
+### 1. Connecting
+Simply use your host computer's IP address and the port (default 8000).
+*   **LAN**: `http://192.168.1.x:8000`
+*   **Tailscale**: `http://100.x.y.z:8000`
+
+### 2. "Secure Context" Issues (Browser Blocking)
+Modern browsers restrict high-performance features (like `SharedArrayBuffer`, required by this game) to **Secure Contexts** (HTTPS or localhost). Connecting via a plain HTTP IP address (like `http://100.x.y.z:8000`) may cause the game to hang or crash.
+
+#### Solution A: Tailscale Serve (Recommended)
+Use Tailscale's built-in HTTPS feature to create a secure tunnel.
+1.  Run the game server: `pixi run online`
+2.  In a separate terminal, run:
+    ```bash
+    tailscale serve https:443 / http://127.0.0.1:8000
+    ```
+3.  Open the provided HTTPS URL (e.g., `https://your-pc.tailnet.ts.net`) on your remote device.
+
+#### Solution B: Browser Flag (Workaround)
+Force your browser to treat the insecure IP as secure.
+1.  On the **client device** (e.g., your phone or laptop), open Chrome/Edge.
+2.  Go to `chrome://flags/#unsafely-treat-insecure-origin-as-secure`.
+3.  Enable the flag and enter your server's full URL (e.g., `http://100.100.10.10:8000`).
+4.  Relaunch the browser.
+
 ## License
 
 Do what you want. Not affiliated with Rockstar Games.
@@ -314,3 +342,16 @@ Do what you want. Not affiliated with Rockstar Games.
 If you find this project useful:
 
 - **TON / USDT (TON)**  `UQAyBchGEKi9NnNQ3AKMQMuO-SGEhMIAKFAbkwwrsiOPj9Gy`
+
+## Changelog
+
+### v1.1.0 - Tailscale & Localization Update
+*   **Remote Access**: Server now binds to  .0.0.0 to allow connections from LAN and Tailscale.
+*   **Documentation**: Added guide for connecting via Tailscale/LAN and handling Secure Contexts.
+*   **Localization**: Fixed Russian text in the main menu (Subscribe for news and releases).
+*   **Credits**: Added comprehensive credits for Deobfuscation, Translation, and Offline Support.
+
+### v1.0.0 - Initial Enhancements
+*   **Offline Mode**: Game assets are cached locally for offline play.
+*   **Cheats**: Added cheat menu (F3) and support for classic GTA VC cheats.
+*   **Smart Caching**: Optimized asset loading strategy.

@@ -108,4 +108,4 @@ if __name__ == "__main__":
             webbrowser.open(url)
         threading.Timer(1.5, open_browser).start()
 
-    uvicorn.run(app, host="localhost", port=args.port)
+    uvicorn.run(app, host="0.0.0.0", port=args.port)
