@@ -7,6 +7,8 @@ version = "0.1.0"
 
 [tasks]
 local = "python server.py --custom_saves"
+offline = "python server.py --vcsky_local --vcbr_local --custom_saves"
+online = "python server.py --vcsky_cache --vcbr_cache --custom_saves"
 start = "python server.py --vcsky_cache --vcbr_cache --custom_saves"
 cheat = "python server.py --vcsky_cache --vcbr_cache --custom_saves --cheats --open"
 

@@ -75,11 +75,19 @@ This project is a community effort to preserve the incredible HTML5 port of GTA:
         ```
 
 4.  **Start the game**:
-    *   **Standard Mode**:
+    *   **Online Mode** (Recommended):
         ```bash
-        pixi run start
+        pixi run online
         ```
-    *   **Cheat Mode** (Opens browser with cheats enabled):
+        *Checks local files first. If missing, downloads from CDN and caches them.*
+
+    *   **Offline Mode** (Strict):
+        ```bash
+        pixi run offline
+        ```
+        *Uses ONLY local files. No network connection. Useful if you have all assets downloaded.*
+
+    *   **Cheat Mode**:
         ```bash
         pixi run cheat
         ```
@@ -99,11 +107,10 @@ This project is a community effort to preserve the incredible HTML5 port of GTA:
 This project uses [Pixi](https://pixi.sh/) for dependency management and task running.
 
 1.  **Install Pixi**: Follow the instructions at [pixi.sh](https://pixi.sh/).
-2.  **Start the server**:
-    ```bash
-    pixi run start
-    ```
-    This command automatically installs dependencies and starts the server with the correct configuration.
+2.  **Run a task**:
+    *   `pixi run online` - Smart caching (download if missing).
+    *   `pixi run offline` - Strict local files only.
+    *   `pixi run cheat` - Online mode + cheats enabled + auto-open browser.
 
 ### Option 2: Using Docker
 The easiest way to get started is using Docker Compose:
