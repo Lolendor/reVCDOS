@@ -7,8 +7,8 @@ version = "0.1.0"
 
 [tasks]
 local = "python server.py --custom_saves"
-start = "python server.py --vcsky_local --custom_saves"
-cheat = "python server.py --vcsky_local --custom_saves --cheats --open"
+start = "python server.py --vcsky_cache --vcbr_cache --custom_saves"
+cheat = "python server.py --vcsky_cache --vcbr_cache --custom_saves --cheats --open"
 
 [dependencies]
 python = "3.12.*"

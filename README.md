@@ -159,12 +159,12 @@ By default the `index.php` and `.htaccess` will get the job done.
 | `--custom_saves` | flag | disabled | Enable local save files (saves router) |
 | `--login` | string | none | HTTP Basic Auth username |
 | `--password` | string | none | HTTP Basic Auth password |
-| `--vcsky_local` | flag | enabled | Serve vcsky from local `vcsky/` directory |
-| `--vcbr_local` | flag | enabled | Serve vcbr from local `vcbr/` directory |
+| `--vcsky_local` | flag | disabled | Serve vcsky from local `vcsky/` directory (Strict Local) |
+| `--vcbr_local` | flag | disabled | Serve vcbr from local `vcbr/` directory (Strict Local) |
 | `--vcsky_url` | string | `https://cdn.dos.zone/vcsky/` | Custom vcsky proxy URL |
 | `--vcbr_url` | string | `https://br.cdn.dos.zone/vcsky/` | Custom vcbr proxy URL |
-| `--vcsky_cache` | flag | disabled | Cache vcsky files locally while proxying |
-| `--vcbr_cache` | flag | disabled | Cache vcbr files locally while proxying |
+| `--vcsky_cache` | flag | enabled | Cache vcsky files locally while proxying (Smart Cache) |
+| `--vcbr_cache` | flag | enabled | Cache vcbr files locally while proxying (Smart Cache) |
 | `--cheats` | flag | disabled | Enable cheats in URL |
 | `--open` | flag | disabled | Open browser on start |
 
