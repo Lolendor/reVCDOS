@@ -33,7 +33,7 @@ This project is a community effort to preserve the incredible HTML5 port.
 
 2.  **Download Assets**:
     > [!WARNING]
-    > These files contain copyrighted materials from Rockstar Games. You must own the original game to use them legally.
+    > These files contain copyrighted materials. You must own the original game to use them legally.
 
     *   **vcbr** (Core Data): [Download](https://gofile.io/d/ceuXTa) (or [Older Version](https://gofile.io/d/U63PZO))
     *   **vcsky** (Assets): [Download](https://gofile.io/d/9QsvMn)
