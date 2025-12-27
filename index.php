@@ -2,7 +2,7 @@
 // ---------------- CONFIG ----------------
 $VCSKY_BASE_URL = "https://cdn.dos.zone/vcsky/";
 $BR_BASE_URL    = "https://br.cdn.dos.zone/vcsky/";
-$BASE_PATH      = '';                // public base URL
+$BASE_PATH      = '/reVCDOS';                // public base URL
 $DIST_PATH      = __DIR__ . '/dist'; // local directory for SPA
 
 // ---------------- HELPERS ----------------

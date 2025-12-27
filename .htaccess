@@ -1,47 +1,52 @@
-# JS files
-AddType application/javascript .js
-
-# WebAssembly files
-AddType application/wasm .wasm
-
-# CSS files
-AddType text/css .css
-
-# Brotli-compressed files
-AddEncoding br .br
-
-
-
-# Enable rewrite engine
 RewriteEngine On
+RewriteBase /reVCDOS/
 
-# Set base path if PHP file is not in root
-RewriteBase /
+# 1. Security Headers (Required)
+<IfModule mod_headers.c>
+    Header set Cross-Origin-Opener-Policy "same-origin"
+    Header set Cross-Origin-Embedder-Policy "require-corp"
+</IfModule>
 
-# If the request is for an existing file or directory, serve it directly
-RewriteCond %{REQUEST_FILENAME} -f [OR]
-RewriteCond %{REQUEST_FILENAME} -d
-RewriteRule ^ - [L]
+# 2. DISABLE Apache Compression for .br files (The Fix)
+<IfModule mod_deflate.c>
+    # Tell Apache NOT to gzip these files
+    SetEnvIfNoCase Request_URI "\.br$" no-gzip dont-vary
+</IfModule>
 
-# Otherwise, route everything to index.php
-RewriteRule ^.*$ index.php [L,QSA]
+# 3. Explicitly Handle .br Files
+<FilesMatch "\.br$">
+    # Disable any default filters that might mess with the binary stream
+    RemoveOutputFilter .br
+    RemoveType .br
+    
+    # Tell the browser: "This file is encoded with Brotli"
+    <IfModule mod_headers.c>
+        Header set Content-Encoding "br"
+        # Prevent caching issues during testing
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+    </IfModule>
+</FilesMatch>
 
-
-# Correct MIME types
+# 4. Correct MIME Types
 AddType application/javascript .js
 AddType application/wasm .wasm
 AddType text/css .css
 
-# Brotli compressed files
-AddEncoding br .br
-
-# Optional: force correct MIME for .js.br or .wasm.br
-<FilesMatch "\.js\.br$">
-    ForceType application/javascript
-    AddEncoding br
+# Force MIME types for the specific compressed files
+<FilesMatch "\.data\.br$">
+    ForceType application/octet-stream
 </FilesMatch>
 
 <FilesMatch "\.wasm\.br$">
     ForceType application/wasm
-    AddEncoding br
 </FilesMatch>
+
+<FilesMatch "\.js\.br$">
+    ForceType application/javascript
+</FilesMatch>
+
+# 5. Routing
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+RewriteRule ^.*$ index.php [L,QSA]

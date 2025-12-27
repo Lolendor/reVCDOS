@@ -1,40 +1,149 @@
-# GTA Vice City — HTML5 Port (DOS Zone)
+reVCDOS - HTML5 Port
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/13GFRIxTwVbixv0Vup9MSVXnB4SLmA3G7?usp=sharing)
 
 > **Fast Start:** Run the server in one click using Google Colab. Click the badge above, run the cell, and use the **"Launch Game"** button. The tunnel password will be copied automatically — just paste it on the page that opens.
 
-Web-based port of GTA: Vice City running in browser via WebAssembly.
+Web-based port running in browser via WebAssembly.
 
-## Requirements
+You can check which files I made changes in commit section. Only for *educational* purpose only
 
-- Colab or Docker or Python 3.8+ or PHP 8.0+
-- Dependencies from `requirements.txt`
+## History & Restoration
+
+This project is a community effort to preserve the incredible HTML5 port.
+
+*   **The Ban**: Takedown for the original web port, shutting down the official servers and CDNs.
+*   **Deobfuscation**: The source code was deobfuscated to allow for self-hosting and study.
+*   **WebAssembly Magic**: Unlike standard PC mods, this port runs entirely in the browser using WebAssembly. It streams assets on-the-fly, making it playable on almost any device with a browser and keyboard, without installation.
+*   **Restoring Functionality**: After the shutdown, the game would hang on a black screen because it couldn't fetch core data files (`.wasm`, `.data`) or assets from the dead CDNs. This repository solves that by:
+    1.  Providing a server that serves these critical files locally.
+    2.  Implementing a caching system to download and save surviving assets.
+    3.  Removing dependencies on the defunct infrastructure.
+
+> [!NOTE]
+> We still do not have the source code for the files in `vcbr` (the compiled WebAssembly modules), which contain the core logic of the game. This project wraps and serves those existing binaries.
+
+**Stability Test**: Watch the server in action here: [reVCDOS Server Stability Test](https://www.youtube.com/watch?v=C8nK81N4iBs)
 
 ## Quick Start
 
+**Installation Tutorial**:
+
+1. Windows 11 + Python/FastAPI: [Youtube](https://youtu.be/AEvh2ok-nvs?si=ibyGHrfqiBgYT39c)
+2. Windows 11 + Apache Server/XAMPP: [Youtube](https://youtu.be/tgctRLYOxSg?si=wo8DgCqUSYDfLPhN)
+
+---
+
 1.  **Clone the repository**:
     ```bash
-    git clone https://github.com/Lolendor/reVCDOS.git
+    git clone --depth 1 https://github.com/Th3w33knd/reVCDOS
     cd reVCDOS
     ```
 
-2. **Configure Assets** (Optional):
+2.  **Download Assets**:
+    > [!WARNING]
+    > These files contain copyrighted materials. You must own the original game to use them legally.
 
-   By default, the project uses **DOS Zone CDN** — no local assets needed. For offline hosting you can use:
-   *   **Packed archive** (`--packed` or `--unpacked`) — single `.bin` file with all assets
-   *   **Local folders** (`--vcsky_local`, `--vcbr_local`) — unpacked asset directories
-   *   **Cache mode** (`--vcsky_cache`, `--vcbr_cache`) — download from CDN once, serve locally after
+    *   **vcbr** (Core Data): [Download](https://gofile.io/d/ceuXTa) (or [Older Version](https://gofile.io/d/U63PZO))
+    *   **vcsky** (Assets): [Download](https://gofile.io/d/9QsvMn)
 
-3. **Launch the Application**:
-   Choose one of the setup methods below:
-   * **Docker** (Recommended for most users) — fast and isolated.
-   * **PHP** — Simply upload the folder to your web server (FTP/Hosting).
-   * **Manual Installation** — for development and customization.
+    **Important**: Extract them so your folder structure looks exactly like this:
+    ```text
+    reVCDOS/
+    ├── vcbr/
+    │   ├── vc-sky-en-v6.data
+    │   ├── vc-sky-en-v6.wasm
+    │   ├── vc-sky-ru-v6.data
+    │   └── vc-sky-ru-v6.wasm
+    ├── vcsky/
+    │   ├── sha256sums.txt
+    │   ├── fetched/
+    │   │   ├── audio/      <-- From download
+    │   │   ├── data/       <-- From download
+    │   │   └── ...
+    │   └── ...
+    ├── server.py
+    └── ...
+    ```
+
+3.  **Install Pixi** (if not already installed):
+    *   **Windows (PowerShell)**:
+        ```powershell
+        powershell -ExecutionPolicy Bypass -c "irm -useb https://pixi.sh/install.ps1 | iex"
+        ```
+    *   **Linux & macOS**:
+        ```bash
+        curl -fsSL https://pixi.sh/install.sh | bash
+        ```
+
+4.  **Start the game**:
+    *   **Online Mode** (Recommended):
+        ```bash
+        pixi run online
+        ```
+        *Checks local files first. If missing, downloads from CDN and caches them.*
+
+    *   **Offline Mode** (Strict):
+        ```bash
+        pixi run offline
+        ```
+        *Uses ONLY local files. No network connection. Useful if you have all assets downloaded.*
+
+    *   **Cheat Mode**:
+        ```bash
+        pixi run cheat
+        ```
+
+5.  **Play**: Open the link shown in the terminal (usually `http://localhost:8000`). If you used `pixi run cheat`, the browser should open automatically.
+
+## Requirements
+
+- Docker or Python 3.8+ or PHP 8.0+
+- Dependencies from `requirements.txt`
+- **Pixi** (Recommended for package management)
+
+## Game Modes
+
+The server supports different modes to suit your setup:
+
+### 1. Online Mode (Recommended)
+**Command:** `pixi run online`
+
+*   **Behavior**: "Smart Caching". The server checks your local `vcsky/` folder first.
+    *   **If file exists**: Serves it locally (Fast, Offline-capable).
+    *   **If file missing**: Downloads it from the CDN and saves it to `vcsky/` for future use.
+*   **Best for**: Most users. It ensures you can play immediately even if you haven't manually downloaded every single asset.
+
+### 2. Offline Mode (Strict)
+**Command:** `pixi run offline`
+
+*   **Behavior**: "Strict Local". The server serves **ONLY** files present in your `vcsky/` and `vcbr/` folders.
+    *   **If file missing**: Returns a 404 Error. No network requests are made.
+*   **Best for**: Users who have manually downloaded the full asset packs and want to ensure no background network activity. Ideal for air-gapped or fully offline setups.
+
+### 3. Cheat Mode
+**Command:** `pixi run cheat`
+
+*   **Behavior**: **Online Mode + Cheats + Auto-open**.
+    *   Starts the server in Online Mode (Smart Caching).
+    *   Automatically opens your default web browser.
+    *   Enables the built-in cheat engine.
+*   **How to use**: Once the game loads, press **F3** to open the cheat menu (Memory Scanner, Noclip, etc.).
+*   **Best for**: Jumping straight into the action with cheats enabled.
 
 ## Setup & Running
 
-### Option 1: Using Docker (Recommended)
+### Option 1: Using Pixi (Recommended)
+
+This project uses [Pixi](https://pixi.sh/) for dependency management and task running.
+
+1.  **Install Pixi**: Follow the instructions at [pixi.sh](https://pixi.sh/).
+2.  **Run a task**:
+    *   `pixi run online` - Smart caching (download if missing).
+    *   `pixi run offline` - Strict local files only.
+    *   `pixi run cheat` - Online mode + cheats enabled + auto-open browser.
+
+### Option 2: Using Docker
 The easiest way to get started is using Docker Compose:
 
 ```bash
@@ -66,7 +175,7 @@ IN_PORT=3000 AUTH_LOGIN=admin AUTH_PASSWORD=secret CUSTOM_SAVES=1 docker compose
 | `UNPACKED` | Unpack archive to local folders (filename or URL, auto-sets vcsky/vcbr paths) |
 | `PACK` | Pack a folder and serve from resulting archive (folder path or MD5 hash) |
 
-### Option 2: Local Installation
+### Option 3: Local Installation (Manual)
 
 1. Install Python dependencies:
 ```bash
@@ -75,15 +184,16 @@ pip install -r requirements.txt
 
 2. Start the server:
 ```bash
-python server.py --packed https://folder.morgen.monster/revcdos.bin
+python server.py --vcsky_local --vcbr_local --custom_saves
 ```
 
 Server starts at `http://localhost:8000`
 
-### Option 3: Shared Hosting on PHP (No installation)
+### Option 4: Shared Hosting on PHP (No installation)
 
-If you want to run the game from a hosted environment with `PHP 8.0` or above, just copy the contents of this repo to your desired hosting
-By default the `index.php` and `.htaccess` will get the job done. 
+If you want to run the game from a hosted environment with `PHP 8.0` or above, just copy the contents of this repo to your desired hosting.
+By default the `index.php` and `.htaccess` will get the job done.
+
 ## Server Options
 
 | Option | Type | Default | Description |
@@ -92,22 +202,21 @@ By default the `index.php` and `.htaccess` will get the job done.
 | `--custom_saves` | flag | disabled | Enable local save files (saves router) |
 | `--login` | string | none | HTTP Basic Auth username |
 | `--password` | string | none | HTTP Basic Auth password |
-| `--vcsky_local` | string/flag | disabled | Serve vcsky from local directory. Use flag for `vcsky/` or specify path |
-| `--vcbr_local` | string/flag | disabled | Serve vcbr from local directory. Use flag for `vcbr/` or specify path |
+| `--vcsky_local` | flag | disabled | Serve vcsky from local `vcsky/` directory (Strict Local) |
+| `--vcbr_local` | flag | disabled | Serve vcbr from local `vcbr/` directory (Strict Local) |
 | `--vcsky_url` | string | `https://cdn.dos.zone/vcsky/` | Custom vcsky proxy URL |
 | `--vcbr_url` | string | `https://br.cdn.dos.zone/vcsky/` | Custom vcbr proxy URL |
-| `--vcsky_cache` | flag | disabled | Cache vcsky files locally while proxying |
-| `--vcbr_cache` | flag | disabled | Cache vcbr files locally while proxying |
-| `--packed` | string | disabled | Serve from packed archive file. Accepts file path or URL |
-| `--unpacked` | string | disabled | Unpack archive to `unpacked/{hash}/` and serve from there. Accepts file path or URL |
-| `--pack` | string | disabled | Pack a folder and serve from resulting `{hash}.bin` archive. Accepts folder path or MD5 hash |
+| `--vcsky_cache` | flag | enabled | Cache vcsky files locally while proxying (Smart Cache) |
+| `--vcbr_cache` | flag | enabled | Cache vcbr files locally while proxying (Smart Cache) |
+| `--cheats` | flag | disabled | Enable cheats in URL |
+| `--open` | flag | disabled | Open browser on start |
 
 **Examples:**
 ```bash
 # Start on custom port
 python server.py --port 3000
 
-# Enable local saves
+# Enable local saves (Recommended)
 python server.py --custom_saves
 
 # Enable HTTP Basic Authentication
@@ -116,41 +225,9 @@ python server.py --login admin --password secret123
 # Use local vcsky and vcbr files
 python server.py --vcsky_local --vcbr_local
 
-# Cache files locally while proxying (hybrid mode) (recommended)
+# Cache files locally while proxying (hybrid mode)
 python server.py --vcsky_cache --vcbr_cache
-
-# Serve from packed archive (local file)
-python server.py --packed revcdos.bin
-
-# Serve from packed archive (download from URL if not present)
-python server.py --packed https://example.com/revcdos.bin
-
-# Unpack archive and serve from unpacked files
-python server.py --unpacked revcdos.bin
-
-# Stream-unpack from URL (downloads and unpacks simultaneously)
-python server.py --unpacked https://example.com/revcdos.bin
-
-# Pack a folder and serve from the resulting archive
-python server.py --pack /path/to/assets  # Creates {folder_hash}.bin
-
-# Pack from existing unpacked folder by MD5 hash
-python server.py --pack a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6  # Uses unpacked/{hash}/
 ```
-
-> **Note:** HTTP Basic Auth is only enabled when both `--login` and `--password` are provided.
-
-> **Note:** By default, vcsky and vcbr are proxied from DOS Zone CDN. Use `--vcsky_local` and `--vcbr_local` flags to serve files from local directories instead. You can optionally specify a custom path.
-
-> **Note:** Use `--vcsky_cache` and `--vcbr_cache` to cache proxied files locally. Files are downloaded once and served from local storage on subsequent requests.
-
-> **Note:** `--packed` serves files directly from a compressed archive without unpacking (faster and more compressed). `--unpacked` extracts the archive once and serves from local files (if you want edit assets).
-
-> **Note:** When using URL with `--unpacked`, the archive is streamed and unpacked simultaneously during download using `downloader_brotli.py`.
-
-> **Note:** You can pass a raw MD5 hash (32 hex characters) to `--unpacked` to use an existing unpacked folder without needing the original archive. Example: if you have `unpacked/a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6/`, you can start the server with `--unpacked a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6`.
-
-> **Note:** `--pack` creates a packed archive from a folder containing subfolders (like `vcsky/` and `vcbr/`). Each subfolder is packed sequentially: the first creates the archive, subsequent ones are appended. After packing, the server automatically uses the created archive via `--packed` mode.
 
 ## URL Parameters
 
@@ -163,18 +240,15 @@ python server.py --pack a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6  # Uses unpacked/{hash}
 | `max_fps` | `1-240` | Limit frame rate (e.g., `60` for 60 FPS) |
 | `configurable` | `1` | Show configuration UI before play button |
 
-
 **Examples:**
-- `http://localhost:8000/?lang=ru` — Russian version
-- `http://localhost:8000/?lang=en&cheats=1` — English + cheats
-- `http://localhost:8000/?configurable=1` — Show settings UI before play
+- `http://localhost:8000/?lang=ru` - Russian version
+- `http://localhost:8000/?lang=en&cheats=1` - English + cheats
 
 ## Project Structure
 
 ```
-├── server.py           # FastAPI proxy server
-├── index.php           # PHP proxy server
-├── .htaccess           # Apache config for PHP
+├── server.py           # FastAPI proxy/caching server
+├── pixi.toml           # Pixi project configuration
 ├── requirements.txt    # Python dependencies
 ├── revcdos.bin         # Packed archive (optional)
 ├── additions/          # Server extensions
@@ -191,44 +265,25 @@ python server.py --pack a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6  # Uses unpacked/{hash}
 │       └── vcbr/       # Brotli-compressed binaries
 ├── dist/               # Game client files
 │   ├── index.html      # Main page
-│   ├── game.js         # Game loader
+│   ├── game.js         # Game loader (updated with ownership check)
 │   ├── index.js        # Module loader
 │   ├── GamepadEmulator.js  # Touch controls
 │   ├── idbfs.js        # IndexedDB filesystem
 │   ├── jsdos-cloud-sdk.js  # Cloud saves (DOS Zone)
 │   ├── jsdos-cloud-sdk-local.js  # Local saves (--custom_saves)
 │   └── modules/        # WASM modules
-│       ├── runtime.js      # WASM runtime initialization
-│       ├── loader.js       # Asset/package loading
-│       ├── fs.js           # Virtual filesystem
-│       ├── audio.js        # Audio system
-│       ├── graphics.js     # Rendering pipeline
-│       ├── events.js       # Input events handling
-│       ├── fetch.js        # Network requests (Real-time asset streaming)
-│       ├── syscalls.js     # System calls
-│       ├── main.js         # Main entry point
-│       ├── cheats.js       # Cheat engine (F3)
-│       ├── asm_consts/     # Language-specific ASM constants
-│       │   ├── en.js
-│       │   └── ru.js
-│       └── packages/       # Language-specific data packages
-│           ├── en.js
-│           └── ru.js
-├── vcbr/               # Brotli-compressed game data (optional)
-│   ├── vc-sky-en-v6.data.br
-│   ├── vc-sky-en-v6.wasm.br
-│   ├── vc-sky-ru-v6.data.br
-│   └── vc-sky-ru-v6.wasm.br
-└── vcsky/              # Decompressed assets (optional)
-    ├── fetched/        # English version files
-    │   ├── data/
-    │   ├── audio/
-    │   ├── models/
-    │   └── anim/
-    └── fetched-ru/     # Russian version files
+├── vcbr/               # Core game data (REQUIRED LOCALLY)
+│   ├── vc-sky-en-v6.data
+│   ├── vc-sky-en-v6.wasm
+│   ├── vc-sky-ru-v6.data
+│   └── vc-sky-ru-v6.wasm
+└── vcsky/              # Additional assets (Cached locally on demand)
+    ├── sha256sums.txt
+    └── fetched/        # Downloaded assets
         ├── data/
         ├── audio/
-        └── ...
+        ├── models/
+        └── anim/
 ```
 
 ## Features
@@ -239,12 +294,13 @@ python server.py --pack a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6  # Uses unpacked/{hash}
 - 🌍 English/Russian language support
 - 🔧 Built-in cheat engine (memory scanner, cheats)
 - 📱 Mobile touch controls
+- 🔒 **Original Game Verification**: You must provide an original game file to verify ownership and play the full version.
 
 ## Local Saves
 
 When local saves are enabled (`--custom_saves` flag), enter any 5-character identifier in the "js-dos key" input field on the start page. This identifier will be used to store your saves in the `saves/` directory on the server.
 
-Example: Enter `mykey` or `12345` — saves will be stored as `mykey_vcsky.saves` or `12345_vcsky.saves`.
+Example: Enter `mykey` or `12345` - saves will be stored as `mykey_vcsky.saves` or `12345_vcsky.saves`.
 
 ## Controls (Touch)
 
@@ -254,8 +310,146 @@ Touch controls appear automatically on mobile devices. Virtual joysticks for mov
 
 Enable with `?cheats=1`, press **F3** to open menu:
 - Memory scanner (find/edit values)
-- All classic GTA VC cheats
+- All classic cheats
 - AirBreak (noclip mode)
+
+## Remote Access (Tailscale / LAN)
+
+The server is configured to listen on `0.0.0.0`, meaning it accepts connections from other devices on your network (LAN or VPN like Tailscale).
+
+### 1. Connecting
+Simply use your host computer's IP address and the port (default 8000).
+*   **LAN**: `http://192.168.1.x:8000`
+*   **Tailscale**: `http://100.x.y.z:8000`
+
+### 2. "Secure Context" Issues (Browser Blocking)
+Modern browsers restrict high-performance features (like `SharedArrayBuffer`, required by this game) to **Secure Contexts** (HTTPS or localhost). Connecting via a plain HTTP IP address (like `http://100.x.y.z:8000`) may cause the game to hang or crash.
+
+#### Solution A: Tailscale Serve (Recommended)
+Use Tailscale's built-in HTTPS feature to create a secure tunnel.
+1.  Run the game server: `pixi run online`
+2.  In a separate terminal, run:
+    ```bash
+    tailscale serve https:443 / http://127.0.0.1:8000
+    ```
+3.  Open the provided HTTPS URL (e.g., `https://your-pc.tailnet.ts.net`) on your remote device.
+
+#### Solution B: Browser Flag (Workaround)
+Force your browser to treat the insecure IP as secure.
+1.  On the **client device** (e.g., your phone or laptop), open Chrome/Edge.
+2.  Go to `chrome://flags/#unsafely-treat-insecure-origin-as-secure`.
+3.  Enable the flag and enter your server's full URL (e.g., `http://100.100.10.10:8000`).
+4.  Relaunch the browser.
+
+## Deploying reVCDOS on Android via Termux
+
+**Objective:** Host the reVCDOS (WebAssembly Port) server locally on an Android device using Termux, bypassing native compilation issues for `pydantic-core`.
+
+**Context:**
+- Environment: Android (Termux)
+- Manager: Manual (Pixi is unsupported on Android)
+- Dependencies: Requires `tur-repo` for pre-built Python wheels to avoid Rust compilation errors.
+
+### Phase 1: System Preparation
+
+1.  **Update Package Repositories**
+    Update the Termux environment to ensure compatibility.
+    ```bash
+    pkg update && pkg upgrade -y
+    ```
+
+2.  **Install Base Dependencies**
+    Install Python, Git, and the Termux User Repository (TUR) helper.
+    ```bash
+    pkg install python git tur-repo -y
+    ```
+
+3.  **Setup Storage Permissions**
+    Grant Termux access to the phone's internal storage (required to move game files).
+    ```bash
+    termux-setup-storage
+    ```
+
+### Phase 2: Project Setup
+
+1.  **Clone Repository**
+    Clone the source code into the home directory.
+    ```bash
+    cd $HOME
+    git clone --depth 1 https://github.com/Th3w33knd/reVCDOS
+    cd reVCDOS
+    ```
+
+2.  **Install Heavy Dependencies (The Fix)**
+    Do **not** run `pip install -r requirements.txt` yet. `pydantic-core` requires Rust compilation which fails on Android. We must use the TUR pre-compiled wheels.
+    ```bash
+    pip install --extra-index-url https://termux-user-repository.github.io/pypi/ pydantic-core pydantic
+    ```
+
+3.  **Install Remaining Dependencies**
+    Now install the rest of the requirements (FastAPI, Uvicorn, etc.).
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+### Phase 3: Asset Population (Manual Step)
+
+**CRITICAL:** The server cannot run without the core WebAssembly data (`vcbr`).
+
+1.  **Download Files:**
+    Download the `vcbr` (Core Data) and `vcsky` (Assets) archives mentioned in the README on your phone's browser.
+
+2.  **Move Files to Termux:**
+    Assuming files are in your phone's `Downloads` folder, move them.
+    *(Note: You must extract them so the structure matches exactly below)*
+
+    **Target Structure:**
+    ```text
+    reVCDOS/
+    ├── vcbr/
+    │   ├── vc-sky-en-v6.data
+    │   ├── vc-sky-en-v6.wasm
+    │   ├── vc-sky-ru-v6.data
+    │   └── vc-sky-ru-v6.wasm
+    ├── vcsky/
+    │   ├── fetched/
+    │   └── ...
+    ```
+
+    **Commands (Example):**
+    ```bash
+    # Copy from Downloads to current folder
+    cp -r /sdcard/Download/vcbr ./
+    cp -r /sdcard/Download/vcsky ./
+    ```
+
+### Phase 4: Execution
+
+Since `pixi` is unavailable, use the direct Python commands. Select **ONE** mode below:
+
+#### Option A: Online Mode (Smart Cache) - **Recommended**
+*Use this if you have the `vcbr` files but want to download audio/textures on demand.*
+```bash
+python server.py --vcsky_cache --vcbr_cache --custom_saves
+```
+
+#### Option B: Offline Mode (Strict)
+*Use this ONLY if you have manually downloaded ALL `vcsky` assets and `vcbr` files.*
+```bash
+python server.py --vcsky_local --vcbr_local --custom_saves
+```
+
+#### Option C: Cheat Mode
+*Enables the cheat menu (F3).*
+```bash
+python server.py --vcsky_cache --vcbr_cache --custom_saves --cheats
+```
+
+### Phase 5: Accessing the Game
+
+1.  Open Chrome or Firefox on the Android device.
+2.  Navigate to: `http://localhost:8000`
+3.  **Note:** Do not close the Termux app; let it run in the background. To stop the server, press `CTRL + C` in Termux.
 
 ## License
 
@@ -269,13 +463,38 @@ MIT. Do what you want (but credit the port authors and me). Not affiliated with 
 
 **Russian translation:** [GamesVoice](https://www.gamesvoice.ru/)
 
-**Added by the community:**
-* PHP Support by [Rohamgames](https://github.com/Rohamgames)
+**Some more files were required for being Fully Local:** [Th3w33knd](https://github.com/Th3w33knd)
 
-## Support [me](https://github.com/Lolendor)
+## Support me
 
 If you find this project useful:
 
 - **TON / USDT (TON)**  `UQAyBchGEKi9NnNQ3AKMQMuO-SGEhMIAKFAbkwwrsiOPj9Gy`
-- **ETH / USDT (ERC-20)** `0x69Ec02715cF65538Bb03725F03Bd4c85D33F8AC0`
-- **TRX / USDT (TRC-20)** `THgNWT9MGW52tF8qFHbAWN25UR6WTeLDMY`
+
+## Changelog
+
+### v1.2.2 - Documentation Updates
+*   **Guide**: Added detailed guide for deploying on Android via Termux.
+*   **Docs**: Updated project description to be more generic.
+
+### v1.2.1 - Post-Merge Fixes
+*   **Fix**: Resolved `SyntaxError` in `game.js` by restoring missing IIFE wrapper.
+*   **Fix**: Resolved `ReferenceError` in `index.js` by exposing `currentLanguage` to global scope.
+*   **Fix**: Resolved `server.py` 500 Error by defining missing arguments and global variables.
+*   **Dependency**: Added `aiofiles` to `pixi.toml` and `requirements.txt`.
+
+### v1.2.0 - Upstream Sync & Fixes
+*   **Upstream Merge**: Merged latest changes from `Lolendor/reVCDOS` (Google Colab support, license, graphics updates).
+*   **Bug Fix**: Fixed `server.py` startup issue preventing the server from running.
+*   **Conflict Resolution**: Preserved local preferences (Offline Mode, Cheats) during merge.
+
+### v1.1.0 - Tailscale & Localization Update
+*   **Remote Access**: Server now binds to 0.0.0.0 to allow connections from LAN and Tailscale.
+*   **Documentation**: Added guide for connecting via Tailscale/LAN and handling Secure Contexts.
+*   **Localization**: Fixed Russian text in the main menu (Subscribe for news and releases).
+*   **Credits**: Added comprehensive credits for Deobfuscation, Translation, and Offline Support.
+
+### v1.0.0 - Initial Enhancements
+*   **Offline Mode**: Game assets are cached locally for offline play.
+*   **Cheats**: Added cheat menu (F3) and support for classic cheats.
+*   **Smart Caching**: Optimized asset loading strategy.

@@ -8,8 +8,8 @@ var wasm_content;
 const params = new URLSearchParams(window.location.search);
 
 // Base URLs
-const replaceFetch = (str) => str.replace("https://cdn.dos.zone/vcsky/", "/vcsky/")
-const replaceBR = "/vcbr/"
+const replaceFetch = (str) => str.replace("https://cdn.dos.zone/vcsky/", "vcsky/")
+const replaceBR = "vcbr/"
 
 // Configurable mode - show settings UI before play
 const configurableMode = params.get('configurable') === "1";
@@ -31,155 +31,98 @@ document.body.dataset.isTouch = isTouch ? 1 : 0;
 const dataSize = 130 * 1024 * 1024;
 const textDecoder = new TextDecoder();
 let haveOriginalGame = false;
-const translations = {
-    en: {
-        clickToPlayDemo: "Click to play demo",
-        clickToPlayFull: "Click to play",
-        invalidKey: "invalid key",
-        checking: "checking...",
-        cloudSaves: "Cloud saves:",
-        enabled: "enabled",
-        disabled: "disabled",
-        playDemoText: "You can play the DEMO version, or provide the original game files to play the full version.",
-        disclaimer: "DISCLAIMER:",
-        disclaimerSources: "This game is based on an open source version of GTA: Vice City. It is not a commercial release and is not affiliated with Rockstar Games.",
-        disclaimerCheckbox: "I own the original game",
-        disclaimerPrompt: "You need to provide a file from the original game to confirm ownership of the original game.",
-        cantContinuePlaying: "You can't continue playing in DEMO version. Please provide the original game files to continue playing.",
-        demoAlert: "The demo version is intended only for familiarizing yourself with the game technology. All features are available, but you won't be able to progress through the game's storyline. Please provide the original game files to launch the full version.",
-        downloading: "Downloading",
-        enterKey: "enter your key",
-        clickToContinue: "Click to continue...",
-        enterJsDosKey: "Enter js-dos key (5 len)",
-        portBy: "HTML5 port by:",
-        ruTranslate: "",
-        demoOffDisclaimer: "Due to the unexpectedly high popularity of the project, resulting in significant traffic costs, and in order to avoid any risk of the project being shut down due to rights holder claims, we have disabled the demo version. You can still run the full version by providing the original game resources.",
-        configLanguage: "Language:",
-        configCheats: "Cheats (F3)",
-        configFullscreen: "Fullscreen",
-        configMaxFps: "Max FPS:",
-        configUnlimited: "(0 = unlimited)",
-    },
-    ru: {
-        clickToPlayDemo: "Играть в демо версию",
-        clickToPlayFull: "Играть",
-        invalidKey: "неверный ключ",
-        checking: "проверка...",
-        cloudSaves: "Облачные сохранения:",
-        enabled: "включены",
-        disabled: "выключены",
-        playDemoText: "Вы можете играть в демо версию, или предоставить оригинальные файлы игры для полной версии.",
-        disclaimer: "ОТКАЗ ОТ ОТВЕТСТВЕННОСТИ:",
-        disclaimerSources: "Эта игра основана на открытой версии GTA: Vice City. Она не является коммерческим изданием и не связана с Rockstar Games.",
-        disclaimerCheckbox: "Я владею оригинальной игрой",
-        disclaimerPrompt: "Вам потребуется приложить какой-либо файл из оригинальной игры для подтверждения владения оригинальной игрой.",
-        cantContinuePlaying: "Вы не можете продолжить игру в демо версии. Пожалуйста, предоставьте оригинальные файлы игры для продолжения игры.",
-        demoAlert: "Демо версия предназначена только для ознакомления с технологией игры. Все функции доступны, но вы не сможете продолжить игру по сюжету. Пожалуйста, предоставьте оригинальные файлы игры для запуска полной версии.",
-        downloading: "Загрузка",
-        enterKey: "введите ваш ключ",
-        clickToContinue: "Нажмите для продолжения...",
-        enterJsDosKey: "Введите ключ js-dos (5 букв)",
-        portBy: "Авторы HTML5 порта:",
-        ruTranslate: `
+(function () {
+    const translations = {
+        en: {
+            clickToPlayDemo: "Click to play demo",
+            clickToPlayFull: "Click to play",
+            invalidKey: "invalid key",
+            checking: "checking...",
+            cloudSaves: "Cloud saves:",
+            enabled: "enabled",
+            disabled: "disabled",
+            playDemoText: "You can play the DEMO version, or provide the original game files to play the full version.",
+            disclaimer: "DISCLAIMER:",
+            disclaimerSources: "This game is based on an open source version of GTA: Vice City. It is not a commercial release and is not affiliated with Rockstar Games.",
+            disclaimerCheckbox: "I own the original game",
+            disclaimerPrompt: "You need to provide a file from the original game to confirm ownership of the original game.",
+            cantContinuePlaying: "You can't continue playing in DEMO version. Please provide the original game files to continue playing.",
+            demoAlert: "The demo version is intended only for familiarizing yourself with the game technology. All features are available, but you won't be able to progress through the game's storyline. Please provide the original game files to launch the full version.",
+            downloading: "Downloading",
+            enterKey: "enter your key",
+            clickToContinue: "Click to continue...",
+            enterJsDosKey: "Enter js-dos key (5 len)",
+            portBy: "HTML5 port by:",
+            ruTranslate: "",
+            demoOffDisclaimer: "Due to the unexpectedly high popularity of the project, resulting in significant traffic costs, and in order to avoid any risk of the project being shut down due to rights holder claims, we have disabled the demo version. You can still run the full version by providing the original game resources.",
+            configLanguage: "Language:",
+            configCheats: "Cheats (F3)",
+            configFullscreen: "Fullscreen",
+            configMaxFps: "Max FPS:",
+            configUnlimited: "(0 = unlimited)",
+        },
+        ru: {
+            clickToPlayDemo: "Играть в демо версию",
+            clickToPlayFull: "Играть",
+            invalidKey: "неверный ключ",
+            checking: "проверка...",
+            cloudSaves: "Облачные сохранения:",
+            enabled: "включены",
+            disabled: "выключены",
+            playDemoText: "Вы можете играть в демо версию, или предоставить оригинальные файлы игры для полной версии.",
+            disclaimer: "ОТКАЗ ОТ ОТВЕТСТВЕННОСТИ:",
+            disclaimerSources: "Эта игра основана на открытой версии GTA: Vice City. Она не является коммерческим изданием и не связана с Rockstar Games.",
+            disclaimerCheckbox: "Я владею оригинальной игрой",
+            disclaimerPrompt: "Вам потребуется приложить какой-либо файл из оригинальной игры для подтверждения владения оригинальной игрой.",
+            cantContinuePlaying: "Вы не можете продолжить игру в демо версии. Пожалуйста, предоставьте оригинальные файлы игры для продолжения игры.",
+            demoAlert: "Демо версия предназначена только для ознакомления с технологией игры. Все функции доступны, но вы не сможете продолжить игру по сюжету. Пожалуйста, предоставьте оригинальные файлы игры для запуска полной версии.",
+            downloading: "Загрузка",
+            enterKey: "введите ваш ключ",
+            clickToContinue: "Нажмите для продолжения...",
+            enterJsDosKey: "Введите ключ js-dos (5 букв)",
+            portBy: "Авторы HTML5 порта:",
+            ruTranslate: `
 <div class="translated-by">
     <span>Переведено на русский студией</span>
     <a href="https://www.gamesvoice.ru/" target="_blank">GamesVoice</a>
 </div>
 `,
-        demoOffDisclaimer: "В связи с неожиданно высокой популярностью проекта, как следствие — значительными расходами на трафик, а также во избежание рисков закрытия проекта из-за претензий правообладателей, мы отключили возможность запуска демо-версии. При этом вы по-прежнему можете запустить полную версию, предоставив оригинальные ресурсы.",
-        configLanguage: "Язык:",
-        configCheats: "Читы (F3)",
-        configFullscreen: "Полный экран",
-        configMaxFps: "Макс. FPS:",
-        configUnlimited: "(0 = без ограничений)",
-    },
-};
+            demoOffDisclaimer: "В связи с неожиданно высокой популярностью проекта, как следствие — значительными расходами на трафик, а также во избежание рисков закрытия проекта из-за претензий правообладателей, мы отключили возможность запуска демо-версии. При этом вы по-прежнему можете запустить полную версию, предоставив оригинальные ресурсы.",
+            configLanguage: "Язык:",
+            configCheats: "Читы (F3)",
+            configFullscreen: "Полный экран",
+            configMaxFps: "Макс. FPS:",
+            configUnlimited: "(0 = без ограничений)",
+        },
+    };
 
-var currentLanguage = navigator.language.split("-")[0] === "ru" ? "ru" : "en";
-if (params.get("lang") === "ru") {
-    currentLanguage = "ru";
-} else if (params.get("lang") === "en") {
-    currentLanguage = "en";
-}
-
-window.t = function (key) {
-    return translations[currentLanguage][key];
-}
-
-// Function to update all translated texts on the page
-function updateAllTranslations() {
-    const keyInput = document.querySelector('.jsdos-key-input');
-    if (keyInput) keyInput.setAttribute('placeholder', t("enterJsDosKey"));
-    
-    const clickToPlayButton = document.getElementById('click-to-play-button');
-    if (clickToPlayButton) {
-        clickToPlayButton.textContent = haveOriginalGame ? t('clickToPlayFull') : t('clickToPlayDemo');
-    }
-    
-    const demoOffDisclaimer = document.getElementById('demo-off-disclaimer');
-    if (demoOffDisclaimer) {
-        demoOffDisclaimer.textContent = haveOriginalGame ? "" : "* " + t('demoOffDisclaimer');
-    }
-    
-    const cloudSavesLink = document.getElementById('cloud-saves-link');
-    if (cloudSavesLink) cloudSavesLink.textContent = t('cloudSaves');
-    
-    const cloudSavesStatus = document.getElementById('cloud-saves-status');
-    if (cloudSavesStatus) cloudSavesStatus.textContent = t('enterKey');
-    
-    const playDemoText = document.getElementById('play-demo-text');
-    if (playDemoText) playDemoText.textContent = t('playDemoText');
-    
-    const disclaimerText = document.getElementById('disclaimer-text');
-    if (disclaimerText) disclaimerText.textContent = t('disclaimer');
-    
-    const disclaimerSources = document.getElementById('disclaimer-sources');
-    if (disclaimerSources) disclaimerSources.textContent = t('disclaimerSources');
-    
-    const disclaimerCheckboxLabel = document.getElementById('disclaimer-checkbox-label');
-    if (disclaimerCheckboxLabel) disclaimerCheckboxLabel.textContent = t('disclaimerCheckbox');
-    
-    const portBy = document.getElementById('port-by');
-    if (portBy) portBy.textContent = t('portBy');
-    
-    // Update developed-by section for ruTranslate
-    const developedBy = document.querySelector('.developed-by');
-    const existingTranslatedBy = developedBy?.querySelector('.translated-by');
-    if (existingTranslatedBy) existingTranslatedBy.remove();
-    if (developedBy && t('ruTranslate')) {
-        developedBy.insertAdjacentHTML('beforeend', t('ruTranslate'));
-    }
-    
-    // Update config panel labels if present
-    const configLangLabel = document.getElementById('config-lang-label');
-    if (configLangLabel) configLangLabel.textContent = t('configLanguage');
-    
-    const configCheatsLabel = document.getElementById('config-cheats-label');
-    if (configCheatsLabel) configCheatsLabel.textContent = t('configCheats');
-    
-    const configFullscreenLabel = document.getElementById('config-fullscreen-label');
-    if (configFullscreenLabel) configFullscreenLabel.textContent = t('configFullscreen');
-    
-    const configMaxFpsLabel = document.getElementById('config-max-fps-label');
-    if (configMaxFpsLabel) configMaxFpsLabel.textContent = t('configMaxFps');
-    
-    const configMaxFpsUnlimited = document.getElementById('config-max-fps-unlimited');
-    if (configMaxFpsUnlimited) configMaxFpsUnlimited.textContent = t('configUnlimited');
-}
-
-// Function to update game data files based on language
-function updateGameDataForLanguage(lang) {
-    if (lang === 'ru') {
-        data_content = `${replaceBR}vc-sky-ru-v6.data.br`;
-        wasm_content = `${replaceBR}vc-sky-ru-v6.wasm.br`;
+    window.currentLanguage = navigator.language.split("-")[0] === "ru" ? "ru" : "en";
+    if (params.get("lang") === "ru") {
+        window.currentLanguage = "ru";
+        // }
+        // if (params.get("lang") === "en") {
     } else {
-        data_content = `${replaceBR}vc-sky-en-v6.data.br`;
-        wasm_content = `${replaceBR}vc-sky-en-v6.wasm.br`;
+        window.currentLanguage = "en";
     }
-}
 
-// Initialize data files based on current language
-updateGameDataForLanguage(currentLanguage);
+    window.t = function (key) {
+        return translations[currentLanguage][key];
+    }
+})();
+
+if (params.get('lang') === 'ru') {
+    data_content = `${replaceBR}vc-sky-ru-v6.data`;
+    wasm_content = `${replaceBR}vc-sky-ru-v6.wasm`;
+    // } else if (params.get('lang') === 'ru') {
+    //     data_content = `${replaceBR}vc-sky-ru-v6.data`;
+    //     wasm_content = `${replaceBR}vc-sky-ru-v6.wasm`;
+} else {
+    data_content = `${replaceBR}vc-sky-en-v6.data`;
+    wasm_content = `${replaceBR}vc-sky-en-v6.wasm`;
+    //     data_content = "index.old.data";
+}
+// data_content = `${replaceBR}vc-sky-ru-v6.data`;
+// wasm_content = `${replaceBR}vc-sky-ru-v6.wasm`;
 
 async function loadData() {
     let cache;
@@ -591,7 +534,7 @@ const clickToPlayButton = document.getElementById('click-to-play-button');
 clickToPlayButton.textContent = t('clickToPlayDemo');
 clickToPlayButton.classList.add('disabled');
 const demoOffDisclaimer = document.getElementById('demo-off-disclaimer');
-demoOffDisclaimer.textContent = "* " +t('demoOffDisclaimer');
+demoOffDisclaimer.textContent = "* " + t('demoOffDisclaimer');
 const cloudSavesLink = document.getElementById('cloud-saves-link');
 cloudSavesLink.textContent = t('cloudSaves');
 cloudSavesStatus.textContent = t('enterKey');
@@ -624,7 +567,7 @@ function ownerShipNotConfirmed() {
     localStorage.removeItem('vcsky.haveOriginalGame');
     disclaimerCheckbox.checked = false;
     clickToPlayButton.textContent = t('clickToPlayDemo');
-    demoOffDisclaimer.textContent = "* " +t('demoOffDisclaimer');
+    demoOffDisclaimer.textContent = "* " + t('demoOffDisclaimer');
     haveOriginalGame = false;
     clickToPlayButton.classList.add('disabled');
 };
@@ -798,48 +741,3 @@ const revc_ini = (() => {
     }
     return revc_iniDefault;
 })();
-
-// Configurable mode UI
-if (configurableMode) {
-    const configPanel = document.getElementById('config-panel');
-    const configLang = document.getElementById('config-lang');
-    const configCheats = document.getElementById('config-cheats');
-    const configFullscreen = document.getElementById('config-fullscreen');
-    const configMaxFps = document.getElementById('config-max-fps');
-    
-    if (configPanel && configCheats && configFullscreen && configMaxFps) {
-        // Show config panel
-        configPanel.style.display = 'block';
-        
-        // Set initial values from URL params
-        if (configLang) configLang.value = currentLanguage;
-        configCheats.checked = cheatsEnabled;
-        configFullscreen.checked = autoFullScreen;
-        configMaxFps.value = maxFPS;
-        
-        // Update config panel labels with current language
-        updateAllTranslations();
-        
-        // Language selector handler
-        if (configLang) {
-            configLang.addEventListener('change', (e) => {
-                currentLanguage = e.target.value;
-                updateGameDataForLanguage(currentLanguage);
-                updateAllTranslations();
-            });
-        }
-        
-        // Update settings when changed
-        configCheats.addEventListener('change', (e) => {
-            cheatsEnabled = e.target.checked;
-        });
-        
-        configFullscreen.addEventListener('change', (e) => {
-            autoFullScreen = e.target.checked;
-        });
-        
-        configMaxFps.addEventListener('input', (e) => {
-            maxFPS = parseInt(e.target.value) || 0;
-        });
-    }
-}
