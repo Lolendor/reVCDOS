@@ -27,7 +27,12 @@ This project is a community effort to preserve the incredible HTML5 port.
 
 ## Quick Start
 
-**Installation Tutorial**: Video only covers installation in Windows 11 + Python : [Install reVCDOS](https://youtu.be/AEvh2ok-nvs?si=ibyGHrfqiBgYT39c)
+**Installation Tutorial**:
+
+1. Windows 11 + Python/FastAPI: [Youtube](https://youtu.be/AEvh2ok-nvs?si=ibyGHrfqiBgYT39c)
+2. Windows 11 + Apache Server/XAMPP: [Youtube](https://youtu.be/tgctRLYOxSg?si=wo8DgCqUSYDfLPhN)
+
+---
 
 1.  **Clone the repository**:
     ```bash
