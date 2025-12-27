@@ -21,15 +21,21 @@ services:
       - VCBR_URL=${VCBR_URL:-}
       - VCSKY_CACHE=${VCSKY_CACHE:-}
       - VCBR_CACHE=${VCBR_CACHE:-}
-    command: > 
+      - PACKED=${PACKED:-}
+      - UNPACKED=${UNPACKED:-}
+      - PACK=${PACK:-}
+    command: >
       sh -c "python server.py
       --port $${IN_PORT:-8000}
       $$([ -n \"$$AUTH_LOGIN\" ] && [ -n \"$$AUTH_PASSWORD\" ] && echo \"--login $$AUTH_LOGIN --password $$AUTH_PASSWORD\" || echo '')
       $$([ \"$$CUSTOM_SAVES\" = '1' ] && echo '--custom_saves' || echo '')
-      $$([ \"$$VCSKY_LOCAL\" = '1' ] && echo '--vcsky_local' || echo '')
-      $$([ \"$$VCBR_LOCAL\" = '1' ] && echo '--vcbr_local' || echo '')
+      $$(if [ \"$$VCSKY_LOCAL\" = '1' ]; then echo '--vcsky_local'; elif [ -n \"$$VCSKY_LOCAL\" ]; then echo \"--vcsky_local $$VCSKY_LOCAL\"; fi)
+      $$(if [ \"$$VCBR_LOCAL\" = '1' ]; then echo '--vcbr_local'; elif [ -n \"$$VCBR_LOCAL\" ]; then echo \"--vcbr_local $$VCBR_LOCAL\"; fi)
       $$([ -n \"$$VCSKY_URL\" ] && echo \"--vcsky_url $$VCSKY_URL\" || echo '')
       $$([ -n \"$$VCBR_URL\" ] && echo \"--vcbr_url $$VCBR_URL\" || echo '')
       $$([ \"$$VCSKY_CACHE\" = '1' ] && echo '--vcsky_cache' || echo '')
-      $$([ \"$$VCBR_CACHE\" = '1' ] && echo '--vcbr_cache' || echo '')"
+      $$([ \"$$VCBR_CACHE\" = '1' ] && echo '--vcbr_cache' || echo '')
+      $$([ -n \"$$PACKED\" ] && echo \"--packed $$PACKED\" || echo '')
+      $$([ -n \"$$UNPACKED\" ] && echo \"--unpacked $$UNPACKED\" || echo '')
+      $$([ -n \"$$PACK\" ] && echo \"--pack $$PACK\" || echo '')"
     restart: unless-stopped

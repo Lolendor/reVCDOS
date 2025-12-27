@@ -1,14 +1,14 @@
 (function() {
     var modules = [
         'modules/runtime.js',
-        (params.get('lang') === 'ru' ? 'modules/packages/ru.js' : 'modules/packages/en.js'),
+        (currentLanguage === 'ru' ? 'modules/packages/ru.js' : 'modules/packages/en.js'),
         'modules/loader.js',
         'modules/fs.js',
         'modules/audio.js',
         'modules/graphics.js',
         'modules/events.js',
         'modules/fetch.js',
-        (params.get('lang') === 'ru' ? 'modules/asm_consts/ru.js' : 'modules/asm_consts/en.js'),
+        (currentLanguage === 'ru' ? 'modules/asm_consts/ru.js' : 'modules/asm_consts/en.js'),
         // 'modules/cheats.js',
         'modules/main.js'
     ];

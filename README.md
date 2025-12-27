@@ -147,7 +147,7 @@ This project uses [Pixi](https://pixi.sh/) for dependency management and task ru
 The easiest way to get started is using Docker Compose:
 
 ```bash
-VCSKY_CACHE=1 VCBR_CACHE=1 docker compose up -d --build
+PACKED=https://folder.morgen.monster/revcdos.bin docker compose up -d --build
 ```
 
 To configure server options via environment variables:
@@ -165,12 +165,15 @@ IN_PORT=3000 AUTH_LOGIN=admin AUTH_PASSWORD=secret CUSTOM_SAVES=1 docker compose
 | `AUTH_LOGIN` | HTTP Basic Auth username |
 | `AUTH_PASSWORD` | HTTP Basic Auth password |
 | `CUSTOM_SAVES` | Enable local saves (set to `1`) |
-| `VCSKY_LOCAL` | Serve vcsky from local directory (set to `1`) |
-| `VCBR_LOCAL` | Serve vcbr from local directory (set to `1`) |
+| `VCSKY_LOCAL` | Serve vcsky from local directory (set to `1`, or path like `/data/vcsky`) |
+| `VCBR_LOCAL` | Serve vcbr from local directory (set to `1`, or path like `/data/vcbr`) |
 | `VCSKY_URL` | Custom vcsky proxy URL |
 | `VCBR_URL` | Custom vcbr proxy URL |
 | `VCSKY_CACHE` | Cache vcsky files locally while proxying (set to `1`) |
 | `VCBR_CACHE` | Cache vcbr files locally while proxying (set to `1`) |
+| `PACKED` | Serve from packed archive (filename or URL, e.g., `revcdos.bin`) |
+| `UNPACKED` | Unpack archive to local folders (filename or URL, auto-sets vcsky/vcbr paths) |
+| `PACK` | Pack a folder and serve from resulting archive (folder path or MD5 hash) |
 
 ### Option 3: Local Installation (Manual)
 
@@ -219,7 +222,7 @@ python server.py --custom_saves
 # Enable HTTP Basic Authentication
 python server.py --login admin --password secret123
 
-# Use local vcsky and vcbr files (fully offline mode)
+# Use local vcsky and vcbr files
 python server.py --vcsky_local --vcbr_local
 
 # Cache files locally while proxying (hybrid mode)
@@ -235,6 +238,7 @@ python server.py --vcsky_cache --vcbr_cache
 | `request_original_game` | `1` | Request original game files before play |
 | `fullscreen` | `0` | Disable auto-fullscreen |
 | `max_fps` | `1-240` | Limit frame rate (e.g., `60` for 60 FPS) |
+| `configurable` | `1` | Show configuration UI before play button |
 
 **Examples:**
 - `http://localhost:8000/?lang=ru` - Russian version
@@ -246,10 +250,19 @@ python server.py --vcsky_cache --vcbr_cache
 ├── server.py           # FastAPI proxy/caching server
 ├── pixi.toml           # Pixi project configuration
 ├── requirements.txt    # Python dependencies
+├── revcdos.bin         # Packed archive (optional)
 ├── additions/          # Server extensions
 │   ├── auth.py         # HTTP Basic Auth middleware
 │   ├── cache.py        # Proxy caching and brotli decompression
+│   ├── packed.py       # Packed archive serving module
 │   └── saves.py        # Local saves router
+├── utils/              # Utility modules
+│   ├── packer_brotli.py # Archive packer with brotli compression
+│   └── downloader_brotli.py # Archive packer with brotli compression
+├── unpacked/           # Auto-created by --unpacked flag
+│   └── {md5_hash}/     # Unpacked files organized by source hash
+│       ├── vcsky/      # Decompressed game assets
+│       └── vcbr/       # Brotli-compressed binaries
 ├── dist/               # Game client files
 │   ├── index.html      # Main page
 │   ├── game.js         # Game loader (updated with ownership check)
