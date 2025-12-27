@@ -109,3 +109,6 @@ def start_server(app=app, host="0.0.0.0", port=args.port):
         threading.Timer(1.5, open_browser).start()
 
     uvicorn.run(app, host="0.0.0.0", port=args.port)
+
+if __name__ == "__main__":
+    start_server()
