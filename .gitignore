@@ -1,11 +1,19 @@
+# pixi environments
+.pixi/*
+!.pixi/config.toml
+
+# Python
 *.pyc
 __pycache__/
 *.$py.class
 
+# System
 .DS_Store
 
+# Game Assets
 vcbr/
 vcsky/
-saves/
-unpacked/
-*.bin
+vcsky.bak/
+vcsky_new/
+vcsky_old/
+vcsky_oldnew/

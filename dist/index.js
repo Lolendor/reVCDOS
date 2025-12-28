@@ -1,4 +1,4 @@
-(function() {
+(function () {
     var modules = [
         'modules/runtime.js',
         (currentLanguage === 'ru' ? 'modules/packages/ru.js' : 'modules/packages/en.js'),
@@ -19,13 +19,13 @@
     if (typeof importScripts === 'function') {
         importScripts.apply(null, modules);
     } else {
-        var loadNext = function(i) {
+        var loadNext = function (i) {
             if (i < modules.length) {
                 var s = document.createElement('script');
                 s.src = modules[i];
                 s.async = false; // Ensure order
-                s.onload = function() { loadNext(i + 1); };
-                s.onerror = function() { console.error('Failed to load module: ' + modules[i]); };
+                s.onload = function () { loadNext(i + 1); };
+                s.onerror = function () { console.error('Failed to load module: ' + modules[i]); };
                 document.body.appendChild(s);
             }
         };

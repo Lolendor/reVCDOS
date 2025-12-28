@@ -15,33 +15,34 @@ from additions.packed import init_packed_archive, get_packed_file, is_initialize
 # Add utils path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'utils'))
 
+# --- CONFIGURATION ---
+VCSKY_BASE_URL = "https://cdn.dos.zone/vcsky/"
+VCBR_BASE_URL = "https://br.cdn.dos.zone/vcsky/"
+
+def request_to_url(request: Request, path: str, base_url: str):
+    return f"{base_url}{path}"
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--port", type=int, default=8000)
 parser.add_argument("--custom_saves", action="store_true")
 parser.add_argument("--login", type=str)
 parser.add_argument("--password", type=str)
-parser.add_argument("--vcsky_local", type=str, nargs='?', const='vcsky', default=None,
-                    help="Serve vcsky from local directory instead of proxy. Optionally specify path (default: vcsky/)")
-parser.add_argument("--vcbr_local", type=str, nargs='?', const='vcbr', default=None,
-                    help="Serve vcbr from local directory instead of proxy. Optionally specify path (default: vcbr/)")
-parser.add_argument("--vcsky_url", type=str, default="https://cdn.dos.zone/vcsky/", help="Custom vcsky proxy URL")
-parser.add_argument("--vcbr_url", type=str, default="https://br.cdn.dos.zone/vcsky/", help="Custom vcbr proxy URL")
-parser.add_argument("--vcsky_cache", action="store_true", help="Cache vcsky files locally. If files are not found in the local directory, they will be downloaded from the specified URL and saved to the local directory.")
-parser.add_argument("--vcbr_cache", action="store_true", help="Cache vcbr files locally. If files are not found in the local directory, they will be downloaded from the specified URL and saved to the local directory.")
-parser.add_argument("--packed", type=str, nargs='?', const='revcdos.bin', default=None,
-                    help="Serve vcsky/ and vcbr/ from packed archive. Can be a local file path or URL. "
-                         "If URL, downloads to local file if not present. If no value specified, uses 'revcdos.bin'. "
-                         "Supports brotli passthrough.")
-parser.add_argument("--unpacked", type=str, default=None,
-                    help="Unpack archive to local folders and serve from there. Can be a local .bin file or URL. "
-                         "Unpacks to unpacked/{md5_hash}/ and sets vcsky_local/vcbr_local automatically. "
-                         "If already unpacked, uses existing files without re-unpacking. "
-                         "If URL, streams and unpacks during download using downloader_brotli.")
-parser.add_argument("--pack", type=str, default=None,
-                    help="Pack a folder to {hash}.bin archive. Can be a folder path or MD5 hash from unpacked/. "
-                         "Packs all subfolders (vcsky/, vcbr/, etc.) into a single archive. "
-                         "After packing, uses the archive with --packed mode to serve files.")
+# Defaulting local flags to False to allow network fallback (Smart Cache)
+parser.add_argument("--vcsky_local", action="store_true", default=False, help="Serve vcsky from local directory instead of proxy")
+parser.add_argument("--vcbr_local", action="store_true", default=False, help="Serve vcbr from local directory instead of proxy")
+parser.add_argument("--vcsky_url", type=str, default=VCSKY_BASE_URL, help="Custom vcsky proxy URL")
+parser.add_argument("--vcbr_url", type=str, default=VCBR_BASE_URL, help="Custom vcbr proxy URL")
+parser.add_argument("--vcsky_cache", action="store_true", default=True, help="Cache vcsky files locally. If files are not found in the local directory, they will be downloaded from the specified URL and saved to the local directory.")
+parser.add_argument("--vcbr_cache", action="store_true", default=True, help="Cache vcbr files locally. If files are not found in the local directory, they will be downloaded from the specified URL and saved to the local directory.")
+parser.add_argument("--cheats", action="store_true", help="Enable cheats in URL")
+parser.add_argument("--open", action="store_true", help="Open browser on start")
+parser.add_argument("--packed", type=str, help="Path or URL to packed archive (.bin)")
+parser.add_argument("--unpacked", type=str, help="Path or URL to unpacked archive folder")
 args = parser.parse_args()
+
+# Global paths for unpacked mode
+VCSKY_LOCAL_PATH = None
+VCBR_LOCAL_PATH = None
 
 
 def _md5_hash(text: str) -> str:
@@ -273,55 +274,41 @@ async def setup_unpacked(source: str) -> tuple:
 
 app = FastAPI()
 
+@app.on_event("startup")
+async def startup_event():
+    await init_server()
+
 if args.login and args.password:
     app.add_middleware(BasicAuthMiddleware, username=args.login, password=args.password)
 
 if args.custom_saves:
     app.include_router(saves.router)
 
-VCSKY_BASE_URL = args.vcsky_url
-VCBR_BASE_URL = args.vcbr_url
-
-# Local paths (can be overridden by --unpacked)
-VCSKY_LOCAL_PATH = args.vcsky_local  # None, 'vcsky', or custom path
-VCBR_LOCAL_PATH = args.vcbr_local    # None, 'vcbr', or custom path
-
-
-def request_to_url(request: Request, path: str, base_url: str):
-    query_string = str(request.url.query) if request.url.query else ""
-    url = f"{base_url}{path}"
-    if query_string:
-        url = f"{url}?{query_string}"
-    return url
+# Ensure directories
+os.makedirs("vcbr", exist_ok=True)
+os.makedirs("vcsky", exist_ok=True)
 
 
 # vcsky routes - packed archive, local, or proxy
 @app.api_route("/vcsky/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"])
 async def vc_sky_proxy(request: Request, path: str):
-    # Try packed archive first if enabled
-    if args.packed and packed_is_initialized():
-        packed_path = f"vcsky/{path}"
-        if response := await get_packed_file(packed_path, request):
-            return response
+    local_path = os.path.join("vcsky", path)
     
-    # Try local directory
-    if VCSKY_LOCAL_PATH:
-        local_path = os.path.join(VCSKY_LOCAL_PATH, path)
+    # 1. Strict Local Mode (No Network)
+    if args.vcsky_local:
         if response := get_local_file(local_path, request):
             return response
-        # If local mode is explicitly set, don't fall through to proxy
-        if args.vcsky_local is not None or args.unpacked:
-            raise HTTPException(status_code=404, detail="File not found")
-    
-    # Proxy mode
-    url = request_to_url(request, path, VCSKY_BASE_URL)
+        raise HTTPException(status_code=404, detail="File not found")
+        
+    # 2. Smart Cache Mode (Local -> Network -> Cache)
+    # If caching is enabled (default), proxy_and_cache checks local first.
+    url = request_to_url(request, path, args.vcsky_url)
     if args.vcsky_cache:
-        cache_path = os.path.join("vcsky", path)
-        return await proxy_and_cache(request, url, cache_path)
+        return await proxy_and_cache(request, url, local_path)
+        
+    # 3. Proxy Only Mode (No Local Cache)
     return await proxy_and_cache(request, url, disable_cache=True)
 
-
-# vcbr routes - packed archive, local, or proxy
 @app.api_route("/vcbr/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"])
 async def vc_br_proxy(request: Request, path: str):
     # Try packed archive first if enabled
@@ -335,12 +322,8 @@ async def vc_br_proxy(request: Request, path: str):
         local_path = os.path.join(VCBR_LOCAL_PATH, path)
         if response := get_local_file(local_path, request):
             return response
-        # If local mode is explicitly set, don't fall through to proxy
-        if args.vcbr_local is not None or args.unpacked:
-            raise HTTPException(status_code=404, detail="File not found")
-    
-    # Proxy mode
-    url = request_to_url(request, path, VCBR_BASE_URL)
+        raise HTTPException(status_code=404, detail="File not found")
+    url = request_to_url(request, path, args.vcbr_url)
     if args.vcbr_cache:
         cache_path = os.path.join("vcbr", path)
         return await proxy_and_cache(request, url, cache_path)
@@ -352,14 +335,11 @@ async def read_index():
     if os.path.exists("dist/index.html"):
         with open("dist/index.html", "r", encoding="utf-8") as f:
             content = f.read()
-        
-        # Inject custom_saves status
         custom_saves_val = "1" if args.custom_saves else "0"
         content = content.replace(
             'new URLSearchParams(window.location.search).get("custom_saves") === "1"',
             f'"{custom_saves_val}" === "1"'
         )
-        
         return Response(content, media_type="text/html", headers={
             "Cross-Origin-Opener-Policy": "same-origin",
             "Cross-Origin-Embedder-Policy": "require-corp"
@@ -392,38 +372,22 @@ async def init_server():
 
 def start_server(app=app, host="0.0.0.0", port=args.port):
     import uvicorn
-    
-    # Initialize server components
-    if args.packed or args.unpacked:
-        asyncio.run(init_server())
-    
-    uvicorn.run(app, host=host, port=port)
+    import webbrowser
+    import threading
+
+    url = f"http://localhost:{args.port}"
+    if args.cheats:
+        url += "/?cheats=1"
+
+    print(f"GTA VC Caching Server Running at {url}")
+
+    if args.open:
+        def open_browser():
+            webbrowser.open(url)
+        threading.Timer(1.5, open_browser).start()
+
+    uvicorn.run(app, host="0.0.0.0", port=args.port)
 
 
 if __name__ == "__main__":
-    # Handle --pack first (pack folder then use packed mode)
-    if args.pack:
-        print(f"Pack mode: {args.pack}")
-        packed_file = pack_source(args.pack)
-        if packed_file:
-            print(f"\nUsing packed archive: {packed_file}")
-            args.packed = packed_file
-        else:
-            print("Packing failed, exiting.")
-            sys.exit(1)
-    
-    print(f"Starting server on http://localhost:{args.port}")
-    
-    if args.unpacked:
-        print(f"unpacked mode: {args.unpacked}")
-    elif args.packed:
-        print(f"packed: {args.packed}")
-    else:
-        vcsky_mode = 'local' if args.vcsky_local else 'proxy'
-        vcbr_mode = 'local' if args.vcbr_local else 'proxy'
-        vcsky_info = args.vcsky_local or VCSKY_BASE_URL
-        vcbr_info = args.vcbr_local or VCBR_BASE_URL
-        print(f"vcsky: {vcsky_mode} ({vcsky_info})")
-        print(f"vcbr: {vcbr_mode} ({vcbr_info})")
-    
     start_server()
